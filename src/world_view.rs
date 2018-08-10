@@ -25,6 +25,8 @@ pub struct WorldViewSettings {
     pub start_color: Color,
     pub blocked_cell_color: Color,
     pub open_cell_color: Color,
+    pub path_line_color: Color,
+    pub path_line_radius: f64,
     pub visited_cell_color: Color,
 }
 
@@ -46,6 +48,8 @@ impl WorldViewSettings {
             start_color: [0.6, 0.6, 1.0, 1.0],
             blocked_cell_color: [0.3, 0.3, 0.3, 1.0],
             open_cell_color: [0.6, 0.6, 0.8, 1.0],
+            path_line_color: [1.0, 0.0, 1.0, 0.8],
+            path_line_radius: 5.0,
             visited_cell_color: [1.0, 0.9, 1.0, 1.0],
         }
     }
@@ -139,7 +143,7 @@ impl WorldView {
             .draw(board_rect, &c.draw_state, c.transform, g);
 
         let cell_size = settings.size / controller.world().width() as f64;
-        
+
         // Draw cells.
         for j in 0..controller.world().height() {
             for i in 0..controller.world().width() {
@@ -175,16 +179,6 @@ impl WorldView {
                     }
                 }
 
-                // Fill visited
-                if let Cell::Visited{g: goalcost, h: heurcost, k: _, parent: parent} = cell {
-                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 0) as f64), 
-                                    &format!("g: {:0.1}", goalcost), glyphs, c, g);                     
-                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 1) as f64), 
-                                    &format!("h: {:0.1}", heurcost), glyphs, c, g);                     
-                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 2) as f64), 
-                                    &format!("p: {:?}", controller.world().coords_for(*parent).unwrap()), glyphs, c, g);                     
-                };
-
             }
         }
 
@@ -218,6 +212,44 @@ impl WorldView {
             let hline = [settings.position[0], y, x2, y];
             cell_edge.draw(hline, &c.draw_state, c.transform, g);
         }
+
+        // Draw path
+        let path_line = Line::new_round(settings.path_line_color, settings.path_line_radius);
+        if let AppState::Active(astar) = &controller.state {
+            if let Some(path) = astar.path() {
+                println!("{:#?}", path);
+                let mut ids = path.iter();
+                let mut prev_coord = astar.world_view().coords_for(*ids.next().unwrap()).unwrap();
+                for id in ids {
+                    let (x1,y1) = prev_coord;
+                    let (x2,y2) = astar.world_view().coords_for(*id).unwrap();
+                    path_line.draw([x1 as f64 * cell_size + cell_size * 0.5,
+                                    y1 as f64 * cell_size + cell_size * 0.5,
+                                    x2 as f64 * cell_size + cell_size * 0.5,
+                                    y2 as f64 * cell_size + cell_size * 0.5], &c.draw_state, c.transform, g);
+                    prev_coord = (x2, y2);
+                }
+            }
+        }
+
+        // Draw text in visited cells over top of everything else
+        for j in 0..controller.world().height() {
+            for i in 0..controller.world().width() {
+                let cell = controller.world().cell_at(i, j).unwrap();
+
+                // Fill visited
+                if let Cell::Visited{g: goalcost, h: heurcost, k: _, parent} = cell {
+                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 0) as f64), 
+                                    &format!("g: {:0.1}", goalcost), glyphs, c, g);                     
+                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 1) as f64), 
+                                    &format!("h: {:0.1}", heurcost), glyphs, c, g);                     
+                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 2) as f64), 
+                                    &format!("p: {:?}", controller.world().coords_for(*parent).unwrap()), glyphs, c, g);                     
+                };
+
+            }
+        }
+
 
         // Draw board edge.
         Rectangle::new_border(settings.board_edge_color, settings.board_edge_radius)

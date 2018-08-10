@@ -14,11 +14,13 @@ pub struct AStarCfg {
     pub start: Option<Id>,
 }
 
+type Frontier = Vec<(Id, f32)>;
+
 #[derive(Clone)]
 pub struct AStar {
     config: AStarCfg,
     current: Option<Id>,
-    frontier: Vec<(Id, f32)>, // cell Id, cost
+    frontier: Frontier, // cell Id, cost
     world: World,
     prev_step: usize,
 }
@@ -255,6 +257,35 @@ impl AStar {
 
     pub fn world_view(&self) -> &World {
         &self.world
+    }
+
+    pub fn frontier_view(&self) -> &Frontier {
+        &self.frontier
+    }
+
+    pub fn path(&self) -> Option<Vec<Id>> {
+        // check if done
+        if let Some(c) = self.current {
+            if c != self.config.start.unwrap() { 
+                None
+            } else {
+                let mut path = vec![c];
+                let mut prev_id = c;
+                let goal = self.config.goal.unwrap();
+                while prev_id != goal {
+                    if let Some(Cell::Visited{g:_,h:_,k:_,parent}) = self.world.cell(prev_id) {
+                        path.push(prev_id);
+                        prev_id = *parent;
+                    } else {
+                        panic!("State corruption");
+                    }
+                }
+                path.push(goal);
+                Some(path)
+            }
+        } else {
+            None
+        }
     }
 }
 
