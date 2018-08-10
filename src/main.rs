@@ -19,11 +19,12 @@ use piston::event_loop::{
 use piston::input::RenderEvent;
 use glutin_window::GlutinWindow;
 
-pub use world::World;
-pub use world_controller::WorldController;
+pub use planning::world::*;
+pub use planning::astar::*;
+pub use world_controller::{WorldController, AppState};
 pub use world_view::{WorldView, WorldViewSettings};
 
-mod world;
+mod planning;
 mod world_controller;
 mod world_view;
 
@@ -37,8 +38,7 @@ fn main() {
     let mut events = Events::new(EventSettings::new().lazy(true));
     let mut gl = GlGraphics::new(opengl);
 
-    let world = World::new();
-    let mut world_controller = WorldController::new(world);
+    let mut world_controller = WorldController::new();
     let world_view_settings = WorldViewSettings::new();
     let world_view = WorldView::new(world_view_settings);
     let texture_settings = TextureSettings::new().filter(Filter::Nearest);
