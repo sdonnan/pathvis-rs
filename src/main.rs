@@ -35,6 +35,7 @@ fn main() {
     let settings = WindowSettings::new("Path Visualizer", [pts_per_cell * (world_side_len + 5), 
                                                            pts_per_cell * (world_side_len + 2)])
         .opengl(opengl)
+        .srgb(false)
         .exit_on_esc(true);
     let mut window: GlutinWindow = settings.build()
         .expect("Could not create window");
