@@ -160,8 +160,7 @@ impl WorldController {
                     AppState::Active(astar) => {
                         match ctrl_index {
                             0 => { if let Some(step) = astar.step() { self.step = step; } },
-                            1 => {}
-                            2 => {
+                            1 => {
                                 toggle_state = true;
                             },
                             _ => {},

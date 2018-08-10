@@ -259,6 +259,10 @@ impl AStar {
         &self.world
     }
 
+    pub fn config_view(&self) -> &AStarCfg {
+        &self.config
+    }
+
     pub fn frontier_view(&self) -> &Frontier {
         &self.frontier
     }
