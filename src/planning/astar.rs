@@ -121,7 +121,26 @@ impl AStar {
         })
     }
 
+    pub fn start(&self) -> Id {
+        self.config.start.unwrap()
+    }
+
+    pub fn goal(&self) -> Id {
+        self.config.goal.unwrap()
+    }
+
+    pub fn current(&self) -> Option<Id> {
+        self.current
+    }
+
     pub fn step(&mut self) -> Option<usize> {
+
+        // check if done
+        if let Some(c) = self.current {
+            if c == self.config.start.unwrap() { 
+                return None 
+            };
+        };
 
         let goal = self.config.goal.unwrap();
         // get the next cell
@@ -146,7 +165,10 @@ impl AStar {
         };
 
         // check if done
-        if next == self.config.start.unwrap() { return None };
+        if next == self.config.start.unwrap() { 
+            self.current = Some(next);
+            return None
+        };
 
         // get x, y coordinates for current cell
         let my_coord = self.world.coords_for(next).unwrap();

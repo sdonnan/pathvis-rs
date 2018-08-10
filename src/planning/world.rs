@@ -179,9 +179,8 @@ impl World {
 
     pub fn id_at(&self, x: usize, y: usize) -> Option<Id>
     {
-        let id = y * self.width + x;
-        if id < self.cells.len() {
-            Some(id)
+        if x < self.width && y < self.height {
+            Some(y * self.width + x)
         } else {
             None
         }

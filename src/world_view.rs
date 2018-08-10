@@ -59,8 +59,8 @@ impl WorldViewSettings {
             selected_cell_background_color: [0.9, 0.9, 1.0, 1.0],
             text_color: [0.0, 0.0, 0.1, 1.0],
             blocked_cell_color: [0.3, 0.3, 0.3, 1.0],
-            open_cell_color: [0.8, 0.8, 1.0, 1.0],
-            visited_cell_color: [0.9, 0.9, 1.0, 1.0],
+            open_cell_color: [0.6, 0.6, 0.8, 1.0],
+            visited_cell_color: [1.0, 0.9, 1.0, 1.0],
         }
     }
 }
@@ -90,7 +90,7 @@ impl WorldView {
     ) 
       where C: CharacterCache<Texture = G::Texture>
     {
-        use graphics::{Text, Image, Line, Rectangle, Transformed};
+        use graphics::{Text, Rectangle, Transformed};
         let (x_, y_) = pos;
         let (x, y) = (self.settings.position[0] + x_, self.settings.position[1] + y_);
         let (sx, sy) = size;
@@ -105,6 +105,30 @@ impl WorldView {
             .draw(label_rect, &c.draw_state, c.transform, g);
     }
 
+    fn write_cell<G: Graphics, C>(
+      &self,
+      cell_size: f64,
+      cell: (usize, usize),
+      pos: (f64, f64),
+      text: &str,
+      glyphs: &mut C,
+      c: &Context,
+      g: &mut G,
+    ) 
+      where C: CharacterCache<Texture = G::Texture>
+    {
+        use graphics::{Text, Transformed};
+        let (i,j) = cell;
+        let pos = [i as f64 * cell_size + self.settings.board_edge_radius + pos.0,
+                   j as f64 * cell_size + self.settings.font_size as f64 + pos.1];
+        let text_image = Text::new(self.settings.font_size);
+        text_image.draw(text,
+                        glyphs,
+                        &c.draw_state,
+                        c.transform.trans(pos[0] + self.settings.position[0],
+                                          pos[1] + self.settings.position[1]),
+                        g);
+    }
 
     /// Draw world.
     pub fn draw<G: Graphics, C>(
@@ -130,23 +154,14 @@ impl WorldView {
 
         let cell_size = settings.size / controller.world().width() as f64;
         
-        // Draw selected cell background.
-        if let Some(ind) = controller.selected_cell {
-            let (ind_x, ind_y) = ind;
-            let pos = [ind_x as f64 * cell_size, ind_y as f64 * cell_size];
-            let cell_rect = [
-                settings.position[0] + pos[0], settings.position[1] + pos[1],
-                cell_size, cell_size
-            ];
-            Rectangle::new(settings.selected_cell_background_color)
-                .draw(cell_rect, &c.draw_state, c.transform, g);
-        }
-
         // Draw cells.
         for j in 0..controller.world().height() {
             for i in 0..controller.world().width() {
                 let cell = controller.world().cell_at(i, j).unwrap();
+                let cell_id = controller.world().id_at(i, j).unwrap();
                 let pos = [i as f64 * cell_size, j as f64 * cell_size];
+
+                // draw background
                 let cell_rect = [
                     settings.position[0] + pos[0], settings.position[1] + pos[1],
                     cell_size, cell_size
@@ -157,8 +172,44 @@ impl WorldView {
                     _ => settings.visited_cell_color,
                 };
                 Rectangle::new(color).draw(cell_rect, &c.draw_state, c.transform, g);
+
+                // Mark start and goal
+                if let Some(start) = controller.state.start() {
+                    if start == cell_id {
+                        self.write_cell(cell_size, (i,j), (0.0,0.0), "S", glyphs, c, g);                     
+                    }
+                }
+                if let Some(goal) = controller.state.goal() {
+                    if goal == cell_id {
+                        self.write_cell(cell_size, (i,j), (0.0,0.0), "G", glyphs, c, g);                     
+                    }
+                }
+
+                // Fill visited
+                if let Cell::Visited{g: goalcost, h: huercost, k: _, parent: _} = cell {
+                    self.write_cell(cell_size, (i,j), (0.0, settings.font_size as f64), 
+                                    &format!("g: {:0.1}", goalcost), glyphs, c, g);                     
+                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 2) as f64), 
+                                    &format!("h: {:0.1}", huercost), glyphs, c, g);                     
+                };
+
             }
         }
+
+        // Draw selected cell border as bold
+        if let AppState::Active(astar) = &controller.state {
+            if let Some(cell) = astar.current() {
+                let (ind_x, ind_y) = astar.world_view().coords_for(cell).unwrap();
+                let pos = [ind_x as f64 * cell_size, ind_y as f64 * cell_size];
+                let cell_rect = [
+                    settings.position[0] + pos[0], settings.position[1] + pos[1],
+                    cell_size, cell_size
+                ];
+                Rectangle::new_border(self.settings.board_edge_color, self.settings.board_edge_radius)
+                    .draw(cell_rect, &c.draw_state, c.transform, g);
+            }
+        }
+
 
         // Draw cell borders.
         let cell_edge = Line::new(settings.cell_edge_color, settings.cell_edge_radius);

@@ -13,10 +13,37 @@ pub enum AppState {
     Active(AStar),
 }
 
+impl AppState {
+
+    pub fn world(&self) -> &World {
+        match &self {
+            AppState::Config { cfg: _, world } => &world,
+            AppState::Active(astar) => astar.world_view(),
+        }
+    }
+
+    pub fn goal(&self) -> Option<Id> {
+        match &self {
+            AppState::Config { cfg, world: _ } => cfg.goal,
+            AppState::Active(astar) => Some(astar.goal()),
+        }
+    }
+
+    pub fn start(&self) -> Option<Id> {
+        match &self {
+            AppState::Config { cfg, world: _ } => cfg.start,
+            AppState::Active(astar) => Some(astar.start()),
+        }
+    }
+
+}
+
 /// Handles events for Sudoku game.
 pub struct WorldController {
     /// Determines current state
     pub state: AppState,
+    /// What step in the process
+    pub step: usize,
     /// Selected cell.
     pub selected_cell: Option<(usize, usize)>,
     /// Stores last mouse cursor position.
@@ -28,16 +55,14 @@ impl WorldController {
     pub fn new() -> WorldController {
         WorldController {
             state: AppState::Config{ cfg: AStarCfg::new(), world: World::new(6,6,vec![Cell::Open; 36]).unwrap()},
+            step: 0,
             selected_cell: None,
             cursor_pos: [0.0, 1.0],
         }
     }
 
     pub fn world(&self) -> &World {
-        match &self.state {
-            AppState::Config { cfg: _, world } => &world,
-            AppState::Active(astar) => astar.world_view(),
-        }
+        self.state.world()
     }
 
     /// Handles events.
@@ -129,7 +154,7 @@ impl WorldController {
                     },
                     AppState::Active(astar) => {
                         match ctrl_index {
-                            0 => {astar.step();},
+                            0 => { if let Some(step) = astar.step() { self.step = step; } },
                             1 => {}
                             2 => {
                                 toggle_state = true;
