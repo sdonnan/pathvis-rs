@@ -11,6 +11,11 @@ Features
 * Selectable heuristic for distance to goal
 * Runs on Windows, Linux, and OSX
 
+Screenshot
+----------
+
+# ![Screenshot](./images/pathvis-rs_active.png)
+
 Caveats
 -------
 
@@ -23,5 +28,6 @@ go unanswered for a long time.
 Thanks
 ------
 
-Thanks to the Piston team. This software wouldn't have been possible without
-the library or the "Sudoku" tutorial which got me started on the GUI portion.
+Thanks to the @PistonDevelopers team. This software wouldn't have been possible
+without the library or the "Sudoku" tutorial which got me started on the GUI
+portion.
