@@ -30,7 +30,10 @@ mod world_view;
 
 fn main() {
     let opengl = OpenGL::V3_2;
-    let settings = WindowSettings::new("Path Visualizer", [512; 2])
+    let world_side_len: u32 = 10; // number of cells in x and y directions
+    let pts_per_cell: u32 = 64; // set the size of the cells on screen
+    let settings = WindowSettings::new("Path Visualizer", [pts_per_cell * (world_side_len + 4), 
+                                                           pts_per_cell * (world_side_len + 1)])
         .opengl(opengl)
         .exit_on_esc(true);
     let mut window: GlutinWindow = settings.build()
@@ -38,8 +41,10 @@ fn main() {
     let mut events = Events::new(EventSettings::new().lazy(true));
     let mut gl = GlGraphics::new(opengl);
 
-    let mut world_controller = WorldController::new();
-    let world_view_settings = WorldViewSettings::new();
+    let mut world_controller = WorldController::new(world_side_len as usize);
+    let mut world_view_settings = WorldViewSettings::new();
+    world_view_settings.size = (pts_per_cell * world_side_len) as f64;
+    world_view_settings.font_size = (pts_per_cell as f64 / 4.0) as u32; // imperically determined ratio
     let world_view = WorldView::new(world_view_settings);
     let texture_settings = TextureSettings::new().filter(Filter::Nearest);
     let ref mut glyphs = GlyphCache::new("assets/FiraSans-Regular.ttf", (), texture_settings)

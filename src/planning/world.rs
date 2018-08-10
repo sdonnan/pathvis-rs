@@ -24,6 +24,15 @@ impl fmt::Display for Cell {
     }
 }
 
+impl Cell {
+    fn clear(&mut self) {
+        match self {
+            Cell::Visited { g: _, h: _, k: _, parent: _ } => {*self = Cell::Open},
+            _ => {}
+        }
+    }
+}
+
 /// A collection of cells defining a 2D world
 #[derive(Debug, Clone)]
 pub struct World {
@@ -163,6 +172,12 @@ impl World {
                     cells: cells,
                 }
             )
+        }
+    }
+
+    pub fn clear(&mut self) {
+        for cell in self.cells.iter_mut() {
+            cell.clear();
         }
     }
 

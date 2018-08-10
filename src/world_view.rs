@@ -11,31 +11,18 @@ use planning::astar::*;
 
 /// Stores world view settings.
 pub struct WorldViewSettings {
-    /// Position from left-top corner.
     pub position: [f64; 2],
-    /// Size of world along horizontal and vertical edge.
     pub size: f64,
     pub font_size: u32,
-    /// Background color.
     pub background_color: Color,
-    /// Border color.
     pub border_color: Color,
-    /// Edge color around the whole board.
     pub board_edge_color: Color,
-    /// Edge color between the 3x3 sections.
-    pub section_edge_color: Color,
-    /// Edge color between cells.
     pub cell_edge_color: Color,
-    /// Edge radius around the whole board.
     pub board_edge_radius: f64,
-    /// Edge radius between the 3x3 sections.
-    pub section_edge_radius: f64,
-    /// Edge radius between cells.
     pub cell_edge_radius: f64,
-    /// Color of selected cell
-    pub selected_cell_background_color: Color,
-    /// Text color.
     pub text_color: Color,
+    pub goal_color: Color,
+    pub start_color: Color,
     pub blocked_cell_color: Color,
     pub open_cell_color: Color,
     pub visited_cell_color: Color,
@@ -46,18 +33,17 @@ impl WorldViewSettings {
     pub fn new() -> WorldViewSettings {
         WorldViewSettings {
             position: [10.0; 2],
-            size: 400.0,
+            size: 600.0,
             font_size: 18,
             background_color: [0.8, 0.8, 1.0, 1.0],
             border_color: [0.0, 0.0, 0.2, 1.0],
             board_edge_color: [0.0, 0.0, 0.2, 1.0],
-            section_edge_color: [0.0, 0.0, 0.2, 1.0],
             cell_edge_color: [0.0, 0.0, 0.2, 1.0],
             board_edge_radius: 3.0,
-            section_edge_radius: 2.0,
             cell_edge_radius: 1.0,
-            selected_cell_background_color: [0.9, 0.9, 1.0, 1.0],
             text_color: [0.0, 0.0, 0.1, 1.0],
+            goal_color: [0.6, 0.8, 0.6, 1.0],
+            start_color: [0.6, 0.6, 1.0, 1.0],
             blocked_cell_color: [0.3, 0.3, 0.3, 1.0],
             open_cell_color: [0.6, 0.6, 0.8, 1.0],
             visited_cell_color: [1.0, 0.9, 1.0, 1.0],
@@ -140,7 +126,7 @@ impl WorldView {
     )
       where C: CharacterCache<Texture = G::Texture>
     {
-        use graphics::{Text, Image, Line, Rectangle, Transformed};
+        use graphics::{Line, Rectangle};
 
         let ref settings = self.settings;
         let board_rect = [
@@ -176,21 +162,27 @@ impl WorldView {
                 // Mark start and goal
                 if let Some(start) = controller.state.start() {
                     if start == cell_id {
-                        self.write_cell(cell_size, (i,j), (0.0,0.0), "S", glyphs, c, g);                     
+                        Rectangle::new(settings.start_color).draw(cell_rect, &c.draw_state, c.transform, g);
+                        self.write_cell(cell_size, (i,j), (cell_size - settings.font_size as f64,0.0),
+                                        "S", glyphs, c, g);                     
                     }
                 }
                 if let Some(goal) = controller.state.goal() {
                     if goal == cell_id {
-                        self.write_cell(cell_size, (i,j), (0.0,0.0), "G", glyphs, c, g);                     
+                        Rectangle::new(settings.goal_color).draw(cell_rect, &c.draw_state, c.transform, g);
+                        self.write_cell(cell_size, (i,j), (cell_size - settings.font_size as f64,0.0),
+                                        "G", glyphs, c, g);                     
                     }
                 }
 
                 // Fill visited
-                if let Cell::Visited{g: goalcost, h: huercost, k: _, parent: _} = cell {
-                    self.write_cell(cell_size, (i,j), (0.0, settings.font_size as f64), 
+                if let Cell::Visited{g: goalcost, h: heurcost, k: _, parent: parent} = cell {
+                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 0) as f64), 
                                     &format!("g: {:0.1}", goalcost), glyphs, c, g);                     
+                    self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 1) as f64), 
+                                    &format!("h: {:0.1}", heurcost), glyphs, c, g);                     
                     self.write_cell(cell_size, (i,j), (0.0, (settings.font_size * 2) as f64), 
-                                    &format!("h: {:0.1}", huercost), glyphs, c, g);                     
+                                    &format!("p: {:?}", controller.world().coords_for(*parent).unwrap()), glyphs, c, g);                     
                 };
 
             }

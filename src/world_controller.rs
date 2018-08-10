@@ -52,9 +52,14 @@ pub struct WorldController {
 
 impl WorldController {
     /// Creates a new world controller.
-    pub fn new() -> WorldController {
+    pub fn new(world_side_len: usize) -> WorldController {
         WorldController {
-            state: AppState::Config{ cfg: AStarCfg::new(), world: World::new(6,6,vec![Cell::Open; 36]).unwrap()},
+            state: AppState::Config{ 
+                cfg: AStarCfg::new(), 
+                world: World::new(
+                    world_side_len,
+                    world_side_len,
+                    vec![Cell::Open; world_side_len*world_side_len]).unwrap()},
             step: 0,
             selected_cell: None,
             cursor_pos: [0.0, 1.0],
@@ -169,9 +174,15 @@ impl WorldController {
                             AStar::from_cfg(cfg.clone(),
                             world.clone()).unwrap()
                         ),
-                        AppState::Active(_) => AppState::Config{ 
-                            cfg: AStarCfg::new(), 
-                            world: World::new(6,6,vec![Cell::Open; 36]).unwrap()
+                        AppState::Active(astar) => {
+                            let mut new_world = (*astar.world_view()).clone();
+                            new_world.clear();
+                            AppState::Config{
+                                cfg: AStarCfg::new()
+                                        .with_goal(astar.goal())
+                                        .with_start(astar.start()), 
+                                world: new_world,
+                            }
                         },
                     };
                     self.state = new_state;
